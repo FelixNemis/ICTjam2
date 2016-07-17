@@ -17,6 +17,7 @@
         <div style="float:left; margin:4px;">
             <img src="img/plusBig.png" onclick="biggen()"><br><img src="img/minusBig.png" onclick="smallen()">
             <br><img id="soundToggle" src="img/noteBig.png" onclick="muteToggle()">
+            <br><img src="img/question.png" onclick="controls()">
         </div>
 
         <script type="text/javascript">
@@ -54,6 +55,10 @@
                     el.src = "img/noteBig.png";
                     state.unmute();
                 }
+            }
+
+            function controls() {
+                alert("Controls: Arrow keys, z x c or v to interact");
             }
         </script>
     </body>
