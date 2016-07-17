@@ -319,7 +319,7 @@ ICTJam2.Game.prototype = {
 
     interactHandler: function () {
         var tile = this.getTileAt({x: this.player.centerX, y: this.player.centerY});
-        if (tile.index === ICTJam2.TileConst.TERM_ON) {
+        if (tile && tile.index === ICTJam2.TileConst.TERM_ON) {
             this.activateTerm();
         }
     },
