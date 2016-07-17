@@ -34,6 +34,16 @@ ICTJam2.Boot.prototype = {
         this.game.state.add('Preloader', ICTJam2.Preloader);
         this.game.state.add('Game', ICTJam2.Game);
 
+        this.game.stage.backgroundColor = '#140c1c';
+
+        this.game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
+        this.game.myScaleFactor = 4;
+        this.game.scale.setUserScale(4, 4);
+
+        Phaser.Canvas.setImageRenderingCrisp(this.game.canvas);
+        this.game.renderer.renderSession.roundPixels = true;
+
+
 		this.game.state.start('Preloader');
 	}
 };

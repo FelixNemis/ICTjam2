@@ -4,27 +4,55 @@
 var ICTJam2 = scope.ICTJam2;
 var Phaser = scope.Phaser;
 
+ICTJam2.TileConst = {
+    TERM_OFF: 42,
+    TERM_ON: 43,
+    ELEVATOR: 45,
+};
+
+ICTJam2.MultiControl = function (inputs, game) {
+    this.inputs = [];
+    for (var i = 0; i < inputs.length; i++) {
+        this.inputs.push(game.input.keyboard.addKey(inputs[i]));
+    }
+
+    this.isDown = function () {
+        var anyDown = false;
+        this.inputs.forEach(function (input) {
+            if (input.isDown) {
+                anyDown = true;
+            }
+        });
+        return anyDown;
+    };
+};
+
 ICTJam2.Game = function () {
 };
 
 ICTJam2.Game.prototype = {
 	create: function () {
-        this.game.stage.backgroundColor = '#140c1c';
-
-        this.game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
-        this.game.scale.setUserScale(4, 4);
-
-        Phaser.Canvas.setImageRenderingCrisp(this.game.canvas);
-        this.game.renderer.renderSession.roundPixels = true;
-
         this.onMapLoad = new Phaser.Signal();
         this.loadMap('map1');
 
-        this.player = this.game.add.sprite(4, 4, 'tiles', 21);
+        this.music = this.game.add.sound('music', 1, true);
+        this.music.play();
+
+        this.sfx = {
+            boop: this.game.add.sound('boop')
+        };
+
+        if (window.muted) {
+            this.mute();
+        }
+
+        this.player = this.game.add.sprite(4, 94, 'tiles', 21);
         this.player.falling = true;
         this.player.jumping = false;
         this.player.facing = 'right';
-        this.player.z = 1;
+        this.player.z = 2;
+
+        this.lastSpawn = new Phaser.Point(4, 94);
 
         var walkFrames = [1, 0];
         this.player.animations.add('walk_right', this.playerFrames(walkFrames, 'right'), 10, true);
@@ -42,31 +70,68 @@ ICTJam2.Game.prototype = {
         this.logicPaused = false;
 
         this.controls = {
-            left: this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT),
-            right: this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT),
-            down: this.game.input.keyboard.addKey(Phaser.Keyboard.DOWN),
-            jump: this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR),
-            misc: this.game.input.keyboard.addKey(Phaser.Keyboard.S),
-            reset: this.game.input.keyboard.addKey(Phaser.Keyboard.R),
+            left: new ICTJam2.MultiControl([Phaser.Keyboard.LEFT], this.game),
+            right: new ICTJam2.MultiControl([Phaser.Keyboard.RIGHT], this.game),
+            down: new ICTJam2.MultiControl([Phaser.Keyboard.DOWN], this.game),
+            jump: new ICTJam2.MultiControl([Phaser.Keyboard.SPACEBAR, Phaser.Keyboard.UP], this.game),
+            misc: new ICTJam2.MultiControl([Phaser.Keyboard.S], this.game),
+            interact: new ICTJam2.MultiControl([Phaser.Keyboard.Z, Phaser.Keyboard.X, Phaser.Keyboard.C, Phaser.Keyboard.V], this.game),
+            reset: new ICTJam2.MultiControl([Phaser.Keyboard.R], this.game),
         };
 
-        this.game.world.sort();
+        this.interactHeld = false;
+        this.objSpawnTime = 0;
+
+        //this.game.world.sort();
 	},
 
     loadMap: function (map) {
         this.currentMap = map;
+
         this.map = this.game.add.tilemap(map);
         this.map.addTilesetImage('tiles');
         this.bgLayer = this.map.createLayer('bg');
-        this.bgLayer.z = -1;
+        this.bgLayer.z = -4;
         this.collisionLayer = this.map.createLayer('collision');
         this.collisionLayer.z = 0;
         this.setCollisionFlags();
 
         this.fgLayer = this.map.createLayer('fg');
-        this.fgLayer.z = 2;
+        this.fgLayer.z = 4;
+
+        if (!this.warps) {
+            this.warps = this.game.add.group();
+        }
+        this.map.createFromObjects('warps', 'warp', 'nothing', null, true, false, this.warps, Phaser.Sprite, false);
+
+        if (!this.objects) {
+            this.objects = this.game.add.group();
+        }
+        this.objects.z = 1;
+
+        this.game.world.sort();
 
         this.onMapLoad.dispatch();
+    },
+
+    warp: function (warp) {
+        this.cleanMap();
+        this.loadMap(warp.destination);
+        if (warp.hasOwnProperty('destX')) {
+            this.player.x = Math.round(warp.destX);
+        }
+        if (warp.hasOwnProperty('destY')) {
+            this.player.y = Math.round(warp.destY);
+        }
+        if (warp.hasOwnProperty('destDir')) {
+            this.player.facing = warp.destDir;
+        }
+
+        this.lastSpawn = this.player.position.clone();
+    },
+
+    reloadMap: function () {
+        this.warp({destination: this.currentMap, destX: this.lastSpawn.x, destY: this.lastSpawn.y});
     },
 
     cleanMap: function () {
@@ -74,6 +139,14 @@ ICTJam2.Game.prototype = {
         this.bgLayer.destroy();
         this.collisionLayer.destroy();
         this.fgLayer.destroy();
+
+        this.warps.forEach(function (warp) {
+            warp.destroy();
+        });
+
+        this.objects.forEach(function (object) {
+            object.destroy();
+        });
     },
 
     playerFrames: function (offsets, direction) {
@@ -96,7 +169,7 @@ ICTJam2.Game.prototype = {
     },
 
     setCollisionFlags: function () {
-        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8];
+        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 84, 85, 86, 87, 88];
         for (var i = 0; i < this.collisionLayer.width; i++) {
             for (var j = 0; j < this.collisionLayer.height; j++) {
                 var tile = this.map.getTile(i, j, 'collision');
@@ -111,18 +184,32 @@ ICTJam2.Game.prototype = {
     },
 
 	update: function () {
-        if (this.controls.reset.isDown) {
+        if (this.controls.reset.isDown()) {
             this.resetGame();
         }
         if (this.logicPaused) {
             return;
         }
 
+        this.warps.forEach(function (warp) {
+            if (this.player.centerX < warp.x || this.player.centerX > warp.right) {
+                return;
+            }
+            if (this.player.centerY < warp.y || this.player.centerY > warp.bottom) {
+                return;
+            }
+            this.warp(warp);
+        }, this);
+
+        if (this.player.x < -16 || this.player.right > this.game.world.width + 16) {
+            this.respawn();
+        }
+
         if (this.player.falling) {
             this.player.y += 0.5;
             this.player.animations.stop();
             if (this.player.y - 8 > this.game.world.height) {
-                this.resetGame();
+                this.respawn();
             }
             var tile = this.getTileBelow(this.playerFeet());
             if (tile && tile.collideUp && this.player.bottom%8 < 0.5) {
@@ -131,8 +218,23 @@ ICTJam2.Game.prototype = {
         } else {
             var velocity = this.game.time.physicsElapsed * 30;
 
-            var leftDown = this.controls.left.isDown;
-            var rightDown = this.controls.right.isDown;
+            if (this.controls.interact.isDown()) {
+                if (!this.interactHeld) {
+                    this.interactHeld = true;
+                    this.interactHandler();
+                }
+            } else if (this.interactHeld) {
+                this.interactHeld = false;
+            }
+
+            if (this.player.pushedThisFrame) {
+                this.player.pushedThisFrame = false;
+            } else {
+                this.player.onElevator = false;
+            }
+
+            var leftDown = this.controls.left.isDown();
+            var rightDown = this.controls.right.isDown();
             if (this.player.jumping) {
                 this.player.jumping = true;
             } else if (this.player.climbing) {
@@ -167,12 +269,13 @@ ICTJam2.Game.prototype = {
                     this.player.x += velocity;
                 }
 
+                var offSide = this.player.x < 0 || this.player.right > this.game.world.width;
                 var newFloor = this.getTileBelow(this.playerFeet());
-                if (!newFloor || !newFloor.collideUp) {
+                if (!this.player.onElevator && !offSide && (!newFloor || !newFloor.collideUp)) {
                     this.player.falling = true;
                 }
             } else {
-                if (this.controls.jump.isDown) {
+                if (this.controls.jump.isDown() && !this.player.onElevator) {
                     this.player.jumping = true;
                     this.player.animations.play('jump_' + this.player.facing);
                     var anim = this.player.animations.currentAnim;
@@ -190,7 +293,7 @@ ICTJam2.Game.prototype = {
                         }
                     };
                     anim.onComplete.addOnce(onDone, this);
-                } else if (this.controls.down.isDown) {
+                } else if (this.controls.down.isDown()) {
                     this.player.y = this.player.y + 1;
                     this.player.falling = true;
                     this.player.frame = this.playerFrame(1, this.player.facing);
@@ -204,6 +307,72 @@ ICTJam2.Game.prototype = {
             }
         }
 	},
+
+    interactHandler: function () {
+        var tile = this.getTileAt({x: this.player.centerX, y: this.player.centerY});
+        if (tile.index === ICTJam2.TileConst.TERM_ON) {
+            this.activateTerm();
+        }
+    },
+
+    activateTerm: function () {
+        if (this.currentMap === 'map3') {
+            this.sfx.boop.play();
+            this.onMapLoad.add(function () {
+                if (this.currentMap !== 'map1') {
+                    return;
+                }
+                this.map.replace(ICTJam2.TileConst.TERM_OFF, ICTJam2.TileConst.TERM_ON, 0, 0, this.map.width, this.map.height, 'collision');
+            }, this);
+        }
+        if (this.currentMap === 'map1') {
+            this.spawnElevator(32, 112, 80);
+        }
+    },
+
+    spawnElevator: function (x, y, targetY) {
+        if (this.elevatorExists) {
+            return;
+        }
+        this.sfx.boop.play();
+        this.elevatorExists = true;
+        this.objSpawnTime = this.game.time.now;
+        var elevator = this.objects.create(x, y, 'tiles', ICTJam2.TileConst.ELEVATOR - 1);
+        elevator.state = this;
+        elevator.targetY = targetY;
+        elevator.waiting = true;
+
+        elevator.update = function () {
+            var xInRange = this.state.player.centerX > this.x && this.state.player.centerX < this.right;
+            if (xInRange) {
+                this.waiting = false;
+            }
+            if (!this.waiting) {
+                this.y -= 0.5;
+                if (xInRange && Math.abs(this.state.playerFeet().y - this.y) < 4) {
+                    this.state.player.y = this.y - 8;
+                    this.state.player.onElevator = true;
+                    this.state.player.pushedThisFrame = true;
+                    this.state.player.falling = false;
+                }
+
+                if (this.y <= this.targetY) {
+                    this.state.elevatorExists = false;
+                    this.destroy();
+                }
+            }
+        };
+    },
+
+    mute: function () {
+        this.music.volume = 0;
+        this.sfx.boop.volume = 0;
+    },
+
+    unmute: function () {
+        this.music.volume = 1;
+        this.sfx.boop.volume = 1;
+    },
 
     getTileAt: function (pos) {
         return this.map.getTile(this.collisionLayer.getTileX(pos.x), this.collisionLayer.getTileY(pos.y), 'collision');
@@ -219,9 +388,11 @@ ICTJam2.Game.prototype = {
     },
 
     respawn: function () {
+        this.reloadMap();
     },
 
     resetGame: function () {
+        this.music.stop();
         this.game.state.start("Game");
     }
 };

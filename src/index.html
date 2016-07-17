@@ -12,8 +12,12 @@
         <script src="js/Preloader.js"></script>
         <script src="js/Game.js"></script>
     </head>
-    <body>
-        <div id="gameContainer"></div>
+    <body style="background-color:#140c1c">
+        <div id="gameContainer" style="border:4px solid #6dc2ca; float:left;"></div>
+        <div style="float:left; margin:4px;">
+            <img src="img/plusBig.png" onclick="biggen()"><br><img src="img/minusBig.png" onclick="smallen()">
+            <br><img id="soundToggle" src="img/noteBig.png" onclick="muteToggle()">
+        </div>
 
         <script type="text/javascript">
             window.onload = function() {
@@ -21,6 +25,36 @@
                 window.gameInstance.state.add('Boot', ICTJam2.Boot);
                 window.gameInstance.state.start('Boot');
             };
+
+            var muted = false;
+            function biggen() { changeScale(true); }
+            function smallen() { changeScale(false); }
+
+            function changeScale(bigger) {
+                var newScale = window.gameInstance.myScaleFactor + (bigger ? 1 : -1);
+                if (newScale < 1) {
+                    newScale = 1;
+                }
+                if (newScale > 10) {
+                    newScale = 10;
+                }
+                window.gameInstance.scale.setUserScale(newScale, newScale);
+                window.gameInstance.myScaleFactor = newScale;
+            }
+
+            function muteToggle() {
+                var el = document.getElementById('soundToggle');
+                var state = window.gameInstance.state.getCurrentState();
+                muted = !muted;
+
+                if (muted) {
+                    el.src = "img/noMusicBig.png";
+                    state.mute();
+                } else {
+                    el.src = "img/noteBig.png";
+                    state.unmute();
+                }
+            }
         </script>
     </body>
 </html>

@@ -41,8 +41,8 @@
                  "type":"",
                  "visible":true,
                  "width":8,
-                 "x":114,
-                 "y":56
+                 "x":198,
+                 "y":76
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -61,8 +61,36 @@
          "width":26,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "height":18,
+         "name":"warps",
+         "objects":[
+                {
+                 "height":48,
+                 "id":2,
+                 "name":"warp",
+                 "properties":
+                    {
+                     "destX":"2",
+                     "destination":"map1"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":8,
+                 "x":210,
+                 "y":70
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":26,
+         "x":0,
+         "y":0
         }],
- "nextobjectid":2,
+ "nextobjectid":3,
  "orientation":"orthogonal",
  "properties":
     {
