@@ -150,6 +150,8 @@ ICTJam2.Game.prototype = {
         this.warps.removeAll(true);
 
         this.objects.removeAll(true);
+
+        this.state.elevatorExists = false;
     },
 
     playerFrames: function (offsets, direction) {
