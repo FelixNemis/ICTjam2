@@ -41,8 +41,8 @@
                  "type":"",
                  "visible":true,
                  "width":8,
-                 "x":88,
-                 "y":86
+                 "x":194,
+                 "y":56
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -100,6 +100,22 @@
                  "width":8,
                  "x":-10,
                  "y":68
+                }, 
+                {
+                 "height":64,
+                 "id":7,
+                 "name":"warp",
+                 "properties":
+                    {
+                     "destX":"2",
+                     "destination":"map4"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":8,
+                 "x":210,
+                 "y":54
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -108,7 +124,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":7,
+ "nextobjectid":9,
  "orientation":"orthogonal",
  "properties":
     {

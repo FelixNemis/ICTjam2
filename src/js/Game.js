@@ -52,6 +52,8 @@ ICTJam2.Game.prototype = {
         this.player.facing = 'right';
         this.player.z = 2;
 
+        this.game.world.sort();
+
         this.lastSpawn = new Phaser.Point(4, 94);
 
         var walkFrames = [1, 0];
@@ -107,6 +109,11 @@ ICTJam2.Game.prototype = {
         if (!this.objects) {
             this.objects = this.game.add.group();
         }
+        if (map === 'map5') {
+            var portal = this.objects.create(82, 96, 'tiles', 59);
+            portal.animations.add('spin', [59, 60, 61, 62, 63, 91, 92, 93], 10, true);
+            portal.animations.play('spin');
+        }
         this.objects.z = 1;
 
         this.game.world.sort();
@@ -140,13 +147,9 @@ ICTJam2.Game.prototype = {
         this.collisionLayer.destroy();
         this.fgLayer.destroy();
 
-        this.warps.forEach(function (warp) {
-            warp.destroy();
-        });
+        this.warps.removeAll(true);
 
-        this.objects.forEach(function (object) {
-            object.destroy();
-        });
+        this.objects.removeAll(true);
     },
 
     playerFrames: function (offsets, direction) {
@@ -169,7 +172,7 @@ ICTJam2.Game.prototype = {
     },
 
     setCollisionFlags: function () {
-        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 84, 85, 86, 87, 88];
+        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 73, 74, 75, 76, 77, 78, 84, 85, 86, 87, 88];
         for (var i = 0; i < this.collisionLayer.width; i++) {
             for (var j = 0; j < this.collisionLayer.height; j++) {
                 var tile = this.map.getTile(i, j, 'collision');
@@ -306,6 +309,12 @@ ICTJam2.Game.prototype = {
                 }
             }
         }
+
+        if (this.player.y < -8) {
+            this.endSprite = this.game.add.sprite(0, 0, 'end');
+            //this.endSprite.alpha = 0;
+
+        }
 	},
 
     interactHandler: function () {
@@ -325,8 +334,20 @@ ICTJam2.Game.prototype = {
                 this.map.replace(ICTJam2.TileConst.TERM_OFF, ICTJam2.TileConst.TERM_ON, 0, 0, this.map.width, this.map.height, 'collision');
             }, this);
         }
+        if (this.currentMap === 'map4') {
+            this.sfx.boop.play();
+            this.onMapLoad.add(function () {
+                if (this.currentMap !== 'map6') {
+                    return;
+                }
+                this.map.replace(ICTJam2.TileConst.TERM_OFF, ICTJam2.TileConst.TERM_ON, 0, 0, this.map.width, this.map.height, 'collision');
+            }, this);
+        }
         if (this.currentMap === 'map1') {
             this.spawnElevator(32, 112, 80);
+        }
+        if (this.currentMap === 'map6') {
+            this.spawnElevator(92, 80, -80);
         }
     },
 

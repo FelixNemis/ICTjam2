@@ -41,8 +41,8 @@
                  "type":"",
                  "visible":true,
                  "width":8,
-                 "x":198,
-                 "y":76
+                 "x":70,
+                 "y":96
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -82,6 +82,40 @@
                  "width":8,
                  "x":210,
                  "y":70
+                }, 
+                {
+                 "height":48,
+                 "id":3,
+                 "name":"warp",
+                 "properties":
+                    {
+                     "destX":"198",
+                     "destination":"map5"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":8,
+                 "x":-10,
+                 "y":70
+                }, 
+                {
+                 "height":8,
+                 "id":4,
+                 "name":"warp",
+                 "properties":
+                    {
+                     "destDir":"left",
+                     "destX":"108",
+                     "destY":"72",
+                     "destination":"map6"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":6,
+                 "x":80,
+                 "y":96
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -90,7 +124,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":3,
+ "nextobjectid":5,
  "orientation":"orthogonal",
  "properties":
     {

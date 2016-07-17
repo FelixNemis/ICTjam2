@@ -12,10 +12,14 @@ ICTJam2.Preloader.prototype = {
 	preload: function () {
         this.game.load.spritesheet('tiles', 'img/tiles.png', 8, 8);
         this.game.load.image('nothing', 'img/nothing.png', 8, 8);
+        this.game.load.image('end', 'img/end.png', 8, 8);
 
         this.game.load.tilemap('map1', 'map/map1.json', null, Phaser.Tilemap.TILED_JSON);
         this.game.load.tilemap('map2', 'map/map2.json', null, Phaser.Tilemap.TILED_JSON);
         this.game.load.tilemap('map3', 'map/map3.json', null, Phaser.Tilemap.TILED_JSON);
+        this.game.load.tilemap('map4', 'map/map4.json', null, Phaser.Tilemap.TILED_JSON);
+        this.game.load.tilemap('map5', 'map/map5.json', null, Phaser.Tilemap.TILED_JSON);
+        this.game.load.tilemap('map6', 'map/map6.json', null, Phaser.Tilemap.TILED_JSON);
 
         this.game.load.audio('boop', ['sfx/boop.mp3', 'sfx/boop.ogg']);
         this.game.load.audio('music', ['sfx/music.mp3', 'sfx/music.ogg']);
