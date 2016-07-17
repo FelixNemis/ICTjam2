@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>ICTjam2</title>
+        <script type="text/javascript">
+            // Namespace that all game code uses
+            var ICTJam2 = {};
+        </script>
+        <script src="lib/phaser.min.js"></script>
+        <script src="js/Boot.js"></script>
+        <script src="js/Preloader.js"></script>
+        <script src="js/Game.js"></script>
+    </head>
+    <body>
+        <div id="gameContainer"></div>
+
+        <script type="text/javascript">
+            window.onload = function() {
+                window.gameInstance = new Phaser.Game(208, 144, Phaser.AUTO, 'gameContainer');
+                window.gameInstance.state.add('Boot', ICTJam2.Boot);
+                window.gameInstance.state.start('Boot');
+            };
+        </script>
+    </body>
+</html>
