@@ -154,8 +154,6 @@ ICTJam2.Game.prototype = {
         this.warps.removeAll(true);
 
         this.objects.removeAll(true);
-
-        this.state.elevatorExists = false;
     },
 
     playerFrames: function (offsets, direction) {
@@ -357,14 +355,20 @@ ICTJam2.Game.prototype = {
         }
     },
 
+    elevatorExists: function () {
+        return this.objects.filter(function (obj) {
+            return obj.name === 'elevator';
+        }).total > 0;
+    },
+
     spawnElevator: function (x, y, targetY) {
-        if (this.elevatorExists) {
+        if (this.elevatorExists()) {
             return;
         }
         this.sfx.boop.play();
-        this.elevatorExists = true;
         this.objSpawnTime = this.game.time.now;
         var elevator = this.objects.create(x, y, 'tiles', ICTJam2.TileConst.ELEVATOR - 1);
+        elevator.name = "elevator";
         elevator.state = this;
         elevator.targetY = targetY;
         elevator.waiting = true;
@@ -384,7 +388,6 @@ ICTJam2.Game.prototype = {
                 }
 
                 if (this.y <= this.targetY) {
-                    this.state.elevatorExists = false;
                     this.destroy();
                 }
             }
