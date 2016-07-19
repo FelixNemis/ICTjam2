@@ -33,6 +33,10 @@ ICTJam2.Game = function () {
 ICTJam2.Game.prototype = {
 	create: function () {
         this.onMapLoad = new Phaser.Signal();
+
+        //Clean up any references to old groups left over from reseting the game
+        this.warps = null;
+        this.objects = null;
         this.loadMap('map1');
 
         this.music = this.game.add.sound('music', 1, true);
