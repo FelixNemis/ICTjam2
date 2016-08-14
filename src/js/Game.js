@@ -10,10 +10,63 @@ ICTJam2.TileConst = {
     ELEVATOR: 45,
 };
 
+ICTJam2.TerrainInfo = {
+    176: {offset: 1},
+    177: {offset: 1},
+};
+
+ICTJam2.gamepadConfig = {
+    'h': [0, 2, 4],
+    'v': [1, 3, 5],
+};
+
+ICTJam2.axisIsHoriz = function (axis) {
+    return (ICTJam2.gamepadConfig.h.indexOf(axis) !== -1);
+};
+
+ICTJam2.AxisButtons = function (gamepad, deadzone) {
+    this.gamepad = gamepad;
+    this.deadzone = deadzone;
+    gamepad.callbackContext = this;
+    gamepad.onAxisCallback = function (gamepad, axisIndex, value) {
+        var axis = ICTJam2.axisIsHoriz(axisIndex) ? this.axisH : this.axisV;
+        axis.pos.isDown = false;
+        axis.neg.isDown = false;
+        if (Math.abs(value) - this.deadzone > 0) {
+            var button = (value > 0) ? axis.pos : axis.neg;
+            console.log('sending button signal ' + value);
+            button.onDown.dispatch();
+            button.isDown = true;
+        }
+    };
+    this.axisH = {pos: {isDown: false, onDown: new Phaser.Signal()}, neg: {isDown: false, onDown: new Phaser.Signal()}};
+    this.axisV = {pos: {isDown: false, onDown: new Phaser.Signal()}, neg: {isDown: false, onDown: new Phaser.Signal()}};
+
+    this.getButton = function (axis, direction) {
+        var axis_ = (axis === 'h') ? this.axisH : this.axisV;
+        return (direction === 'pos') ? axis_.pos : axis_.neg;
+    };
+};
+
 ICTJam2.MultiControl = function (inputs, game) {
+    this.onDown = new Phaser.Signal();
+
+    this.callMeOnDown = function () { this.onDown.dispatch(); };
+
     this.inputs = [];
+    console.log(inputs);
     for (var i = 0; i < inputs.length; i++) {
-        this.inputs.push(game.input.keyboard.addKey(inputs[i]));
+        if (inputs[i] !== null && typeof inputs[i] === 'object') {
+            if (!inputs[i].hasOwnProperty('isDown') || !inputs[i].hasOwnProperty('onDown')) {
+                console.log('invalid button passed to MultiControl');
+            } else {
+                this.inputs.push(inputs[i]);
+            }
+        } else {
+            this.inputs.push(game.input.keyboard.addKey(inputs[i]));
+        }
+
+        this.inputs[i].onDown.add(this.callMeOnDown, this);
     }
 
     this.isDown = function () {
@@ -46,15 +99,31 @@ ICTJam2.Game.prototype = {
             boop: this.game.add.sound('boop')
         };
 
-        if (window.muted) {
+        if (!window.muted) {
             this.mute();
         }
 
         this.player = this.game.add.sprite(4, 94, 'tiles', 21);
         this.player.falling = true;
         this.player.jumping = false;
+        this.player.climbing = false;
         this.player.facing = 'right';
         this.player.z = 2;
+        this.player.game = this;
+
+        this.player.canFall = function () {
+            return !this.jumping && !this.climbing && !this.onElevator;
+        };
+        this.player.feet = function () {
+            return new Phaser.Point(this.centerX, this.bottom);
+        };
+        this.player.checkFloor = function (below) {
+            var tile = below ? this.game.getTileBelow(this.feet()) : this.game.getTileAt(this.feet());
+            if (tile && tile.collideUp) {
+                return true;
+            }
+            return false;
+        };
 
         this.game.world.sort();
 
@@ -75,15 +144,36 @@ ICTJam2.Game.prototype = {
 
         this.logicPaused = false;
 
+        var leftButtons = [Phaser.Keyboard.LEFT];
+        var rightButtons = [Phaser.Keyboard.RIGHT];
+        var downButtons = [Phaser.Keyboard.DOWN];
+        var upButtons = [Phaser.Keyboard.SPACEBAR, Phaser.Keyboard.UP];
+        if (this.game.input.gamepad.supported) {
+            this.game.input.gamepad.start();
+            var axisButtons = new ICTJam2.AxisButtons(this.input.gamepad.pad1, 0);
+
+            leftButtons.push(axisButtons.getButton('h', 'neg'));
+            rightButtons.push(axisButtons.getButton('h', 'pos'));
+            upButtons.push(axisButtons.getButton('v', 'neg'));
+            downButtons.push(axisButtons.getButton('v', 'pos'));
+
+            upButtons.push(this.game.input.gamepad.pad1.getButton(1));
+        }
+
         this.controls = {
-            left: new ICTJam2.MultiControl([Phaser.Keyboard.LEFT], this.game),
-            right: new ICTJam2.MultiControl([Phaser.Keyboard.RIGHT], this.game),
-            down: new ICTJam2.MultiControl([Phaser.Keyboard.DOWN], this.game),
-            jump: new ICTJam2.MultiControl([Phaser.Keyboard.SPACEBAR, Phaser.Keyboard.UP], this.game),
+            left: new ICTJam2.MultiControl(leftButtons, this.game),
+            right: new ICTJam2.MultiControl(rightButtons, this.game),
+            down: new ICTJam2.MultiControl(downButtons, this.game),
+            jump: new ICTJam2.MultiControl(upButtons, this.game),
+            mute: new ICTJam2.MultiControl([Phaser.Keyboard.M], this.game),
             misc: new ICTJam2.MultiControl([Phaser.Keyboard.S], this.game),
             interact: new ICTJam2.MultiControl([Phaser.Keyboard.Z, Phaser.Keyboard.X, Phaser.Keyboard.C, Phaser.Keyboard.V], this.game),
             reset: new ICTJam2.MultiControl([Phaser.Keyboard.R], this.game),
         };
+
+        this.controls.mute.onDown.add(function () {
+            window.muteToggle();
+        }, this);
 
         this.interactHeld = false;
         this.objSpawnTime = 0;
@@ -171,12 +261,10 @@ ICTJam2.Game.prototype = {
         return 21 + ((offset%4)*2) + (direction === 'left' ? 1 : 0);
     },
 
-    playerFeet: function () {
-        return new Phaser.Point(this.player.centerX, this.player.bottom);
-    },
-
     setCollisionFlags: function () {
-        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 73, 74, 75, 76, 77, 78, 84, 85, 86, 87, 88];
+        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 9, 73, 74, 75, 76, 77, 78, 84, 85, 86, 87, 88,
+            144, 145, 146, 147, 148, 149, 149, 150, 151, 152, 176, 177, 178, 179, 180, 192, 194, 195,
+            246, 247, 261, 262, 263, 279, 294, 295];
         for (var i = 0; i < this.collisionLayer.width; i++) {
             for (var j = 0; j < this.collisionLayer.height; j++) {
                 var tile = this.map.getTile(i, j, 'collision');
@@ -187,6 +275,27 @@ ICTJam2.Game.prototype = {
                     tile.collideUp = true;
                 }
             }
+        }
+    },
+
+    collisionCheck: function (entity) {
+        var coords = entity.feet();
+
+        var vertOffset = coords.y%8;
+        
+        if (entity.falling) {
+            if (vertOffset === 0) {
+                var tileBelow = this.getTileBelow(coords);
+                if (tileBelow && tileBelow.collideUp) {
+                    entity.falling = false;
+                    console.log(vertOffset);
+                }
+            } else {
+            }
+        } else if (entity.walked) {
+            if (vertOffset === 0) {
+            }
+            entity.walked = false;
         }
     },
 
@@ -215,13 +324,17 @@ ICTJam2.Game.prototype = {
         if (this.player.falling) {
             this.player.y += 0.5;
             this.player.animations.stop();
+            this.player.frame = this.playerFrame(1, this.player.facing);
             if (this.player.y - 8 > this.game.world.height) {
                 this.respawn();
             }
-            var tile = this.getTileBelow(this.playerFeet());
-            if (tile && tile.collideUp && this.player.bottom%8 < 0.5) {
+            this.collisionCheck(this.player);
+            /*
+            if (this.player.checkFloor(true) && this.player.bottom%8 < 0.5) {
                 this.player.falling = false;
+                console.log(this.player.y%8);
             }
+            */
         } else {
             var velocity = this.game.time.physicsElapsed * 30;
 
@@ -240,9 +353,17 @@ ICTJam2.Game.prototype = {
                 this.player.onElevator = false;
             }
 
+            if (this.player.canFall() && this.player.bottom%8 > 0 && this.player.bottom%8 < 7.5) {
+                if (this.player.checkFloor(true)) {
+                    this.player.falling = true;
+                }
+            }
+
             var leftDown = this.controls.left.isDown();
             var rightDown = this.controls.right.isDown();
-            if (this.player.jumping) {
+            if (this.player.falling) {
+                // don't do any of these other things
+            } else if (this.player.jumping) {
                 this.player.jumping = true;
             } else if (this.player.climbing) {
                 if (this.player.startClimbing) {
@@ -262,6 +383,7 @@ ICTJam2.Game.prototype = {
                     }
                 }
             } else if (leftDown || rightDown && !(leftDown && rightDown)) {
+                this.player.oldX = this.player.x;
                 if (leftDown) {
                     if (this.player.animations.paused === true || this.player.animations.currentAnim !== 'walk_left') {
                         this.player.animations.play('walk_left');
@@ -275,9 +397,10 @@ ICTJam2.Game.prototype = {
                     this.player.facing = 'right';
                     this.player.x += velocity;
                 }
+                this.player.walked = true;
 
                 var offSide = this.player.x < 0 || this.player.right > this.game.world.width;
-                var newFloor = this.getTileBelow(this.playerFeet());
+                var newFloor = this.getTileBelow(this.player.feet());
                 if (!this.player.onElevator && !offSide && (!newFloor || !newFloor.collideUp)) {
                     this.player.falling = true;
                 }
@@ -290,8 +413,7 @@ ICTJam2.Game.prototype = {
                         this.player.y -= 4;
                         this.player.animations.frame = this.playerFrame(0, this.player.facing);
                         this.player.jumping = false;
-                        var tile = this.getTileAt(this.playerFeet());
-                        if (tile && tile.collideUp) {
+                        if (this.player.checkFloor(false)) {
                             this.player.climbing = true;
                             this.player.climbingStart = true;
                             this.player.climbTime = this.game.time.now;
@@ -380,7 +502,7 @@ ICTJam2.Game.prototype = {
             }
             if (!this.waiting) {
                 this.y -= 0.5;
-                if (xInRange && Math.abs(this.state.playerFeet().y - this.y) < 4) {
+                if (xInRange && Math.abs(this.state.player.feet().y - this.y) < 4) {
                     this.state.player.y = this.y - 8;
                     this.state.player.onElevator = true;
                     this.state.player.pushedThisFrame = true;
@@ -402,6 +524,10 @@ ICTJam2.Game.prototype = {
     unmute: function () {
         this.music.volume = 1;
         this.sfx.boop.volume = 1;
+    },
+
+    posToTileCoord: function (pos) {
+        return {x: this.collisionLayer.getTileX(pos.x), y: this.collisionLayer.getTileY(pos.y)};
     },
 
     getTileAt: function (pos) {

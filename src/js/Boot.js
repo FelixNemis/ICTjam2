@@ -9,6 +9,8 @@ ICTJam2.Boot = function () {
 
 };
 
+ICTJam2.INITIAL_SCALE = 6;
+
 ICTJam2.Boot.prototype = {
 	create: function () {
         "use strict";
@@ -37,8 +39,8 @@ ICTJam2.Boot.prototype = {
         this.game.stage.backgroundColor = '#140c1c';
 
         this.game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
-        this.game.myScaleFactor = 4;
-        this.game.scale.setUserScale(4, 4);
+        this.game.myScaleFactor = ICTJam2.INITIAL_SCALE;
+        this.game.scale.setUserScale(ICTJam2.INITIAL_SCALE, ICTJam2.INITIAL_SCALE);
 
         Phaser.Canvas.setImageRenderingCrisp(this.game.canvas);
         this.game.renderer.renderSession.roundPixels = true;

@@ -21,6 +21,13 @@ ICTJam2.Preloader.prototype = {
         this.game.load.tilemap('map5', 'map/map5.json', null, Phaser.Tilemap.TILED_JSON);
         this.game.load.tilemap('map6', 'map/map6.json', null, Phaser.Tilemap.TILED_JSON);
 
+        this.game.load.tilemap('mapc1', 'map/mapc1.json', null, Phaser.Tilemap.TILED_JSON);
+        this.game.load.tilemap('mapc2', 'map/mapc2.json', null, Phaser.Tilemap.TILED_JSON);
+        this.game.load.tilemap('mapc3', 'map/mapc3.json', null, Phaser.Tilemap.TILED_JSON);
+        this.game.load.tilemap('mapc4', 'map/mapc4.json', null, Phaser.Tilemap.TILED_JSON);
+
+        this.game.load.tilemap('mapu1', 'map/mapu1.json', null, Phaser.Tilemap.TILED_JSON);
+
         this.game.load.audio('boop', ['sfx/boop.mp3', 'sfx/boop.ogg']);
         this.game.load.audio('music', ['sfx/music.mp3', 'sfx/music.ogg']);
 	},

@@ -27,7 +27,6 @@
                 window.gameInstance.state.start('Boot');
             };
 
-            var muted = false;
             function biggen() { changeScale(true); }
             function smallen() { changeScale(false); }
 
@@ -56,6 +55,7 @@
                     state.unmute();
                 }
             }
+            var muted = false;
 
             function controls() {
                 alert("Controls: Arrow keys, z x c or v to interact");
