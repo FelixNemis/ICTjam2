@@ -93,6 +93,16 @@ ICTJam2.Game.prototype = {
 	create: function () {
         this.onMapLoad = new Phaser.Signal();
 
+        this.devAccess = false;
+        this.onMapLoad.add(function () {
+            if (this.currentMap !== 'map4' || this.devAccess) {
+                return;
+            }
+            this.map.replace(40, 1, 0, 0, this.map.width, this.map.height, 'collision');
+            this.map.replace(41, 1, 0, 0, this.map.width, this.map.height, 'collision');
+            this.map.replace(57, 1, 0, 0, this.map.width, this.map.height, 'collision');
+        }, this);
+
         //Clean up any references to old groups left over from reseting the game
         this.warps = null;
         this.objects = null;
@@ -197,6 +207,10 @@ ICTJam2.Game.prototype = {
 
         this.controls.mute.onDown.add(function () {
             window.muteToggle();
+        }, this);
+
+        this.controls.misc.onDown.add(function () {
+            this.devAccess = true;
         }, this);
 
         this.interactHeld = false;
