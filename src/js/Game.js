@@ -13,6 +13,7 @@ ICTJam2.TileConst = {
 ICTJam2.TerrainInfo = {
     1:   {0: 5, 1: 2, 2: 1, 3: 1, 4: 0, 5: 0, 6: 0, 7: 0}, 
     4:   {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 3}, 
+    9:   {0: 4, 1: 2, 2: 1, 3: 0, 4: 0, 5: 1, 6: 1, 7: 0},
     39:  {0: false, 1: false, 2: 7, 3: 6, 4: 6, 5: 5, 6: 5, 7: 5},
     40:  {0: 5, 1: 5, 2: 5, 3: 5, 4: 6, 5: 6, 6: 7, 7: false},
     56:  {0: 5, 1: 5, 2: 4, 3: 4, 4: 4, 5: 5, 6: 5, 7: 5},
@@ -60,7 +61,6 @@ ICTJam2.MultiControl = function (inputs, game) {
     this.callMeOnDown = function () { this.onDown.dispatch(); };
 
     this.inputs = [];
-    console.log(inputs);
     for (var i = 0; i < inputs.length; i++) {
         if (inputs[i] !== null && typeof inputs[i] === 'object') {
             if (!inputs[i].hasOwnProperty('isDown') || !inputs[i].hasOwnProperty('onDown')) {
@@ -134,9 +134,29 @@ ICTJam2.Game.prototype = {
             return new Phaser.Point(this.centerX, this.bottom);
         };
         this.player.checkLedge = function () {
-            var tile = this.game.getTileAt(this.feet());
+            var pos = this.feet();
+            pos.y = pos.y - 4;
+            var vertOffset = pos.y % 8;
+            var collisionHeight = null;
+
+            if (vertOffset === 0 || vertOffset === 7) {
+                var lowerTile = this.game.getTileBelow(pos);
+                if (lowerTile && lowerTile.collideUp) {
+                    collisionHeight = this.game.getTileCollisionHeight(lowerTile.index - 1, pos.x%8);
+                    if (collisionHeight === 0) {
+                        return (vertOffset === 7) ? 1 : 0;
+                    }
+                    if (vertOffset === 0 && collisionHeight === 1) {
+                        return 1;
+                    }
+                }
+            }
+            var tile = this.game.getTileAt(pos);
             if (tile && tile.collideUp) {
-                return true;
+                collisionHeight = this.game.getTileCollisionHeight(tile.index - 1, pos.x%8);
+                if (collisionHeight === vertOffset || collisionHeight === vertOffset - 1 || collisionHeight === vertOffset + 1) {
+                    return collisionHeight - vertOffset;
+                }
             }
             return false;
         };
@@ -437,7 +457,7 @@ ICTJam2.Game.prototype = {
             } else if (this.player.climbing) {
                 if (this.player.startClimbing) {
                     if (this.player.climbTime + 200 < this.game.time.now) {
-                        this.player.y = Math.floor(this.player.y/8)*8 + 3;
+                        this.player.y = this.player.y - 1;
                         this.player.frame = this.playerFrame(2, this.player.facing);
 
                         this.player.startClimbing = false;
@@ -445,7 +465,7 @@ ICTJam2.Game.prototype = {
                     }
                 } else {
                     if (this.player.climbTime + 200 < this.game.time.now) {
-                        this.player.y = Math.floor(this.player.y/8)*8;
+                        this.player.y = this.player.y - 4;
                         this.player.animations.play('stand_up_' + this.player.facing);
 
                         this.player.climbing = false;
@@ -477,12 +497,25 @@ ICTJam2.Game.prototype = {
                         this.player.y -= 4;
                         this.player.animations.frame = this.playerFrame(0, this.player.facing);
                         this.player.jumping = false;
-                        if (this.player.checkLedge()) {
+                        var ledgeVal = this.player.checkLedge();
+                        if (ledgeVal !== false) {
                             this.player.climbing = true;
+                            this.player.y += ledgeVal;
                             this.player.climbingStart = true;
                             this.player.climbTime = this.game.time.now;
                         } else {
-                            this.player.falling = true;
+                            this.player.y += 2;
+                            var ledgeVal = this.player.checkLedge();
+                            if (ledgeVal !== false) {
+                                this.player.climbing = true;
+                                this.player.y += ledgeVal;
+                                this.player.climbingStart = true;
+                                this.player.climbTime = this.game.time.now;
+                            } else {
+                                this.player.y -= 3;
+                                this.player.falling = true;
+                            }
+                            //this.player.falling = true;
                         }
                     };
                     anim.onComplete.addOnce(onDone, this);
