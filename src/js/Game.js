@@ -11,8 +11,14 @@ ICTJam2.TileConst = {
 };
 
 ICTJam2.TerrainInfo = {
-    176: {offset: 1},
-    177: {offset: 1},
+    1:   {0: 5, 1: 2, 2: 1, 3: 1, 4: 0, 5: 0, 6: 0, 7: 0}, 
+    4:   {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 3}, 
+    39:  {0: false, 1: false, 2: 7, 3: 6, 4: 6, 5: 5, 6: 5, 7: 5},
+    40:  {0: 5, 1: 5, 2: 5, 3: 5, 4: 6, 5: 6, 6: 7, 7: false},
+    56:  {0: 5, 1: 5, 2: 4, 3: 4, 4: 4, 5: 5, 6: 5, 7: 5},
+    176: {all: 1},
+    177: {all: 1},
+    192: {all: 1},
 };
 
 ICTJam2.gamepadConfig = {
@@ -117,12 +123,30 @@ ICTJam2.Game.prototype = {
         this.player.feet = function () {
             return new Phaser.Point(this.centerX, this.bottom);
         };
-        this.player.checkFloor = function (below) {
-            var tile = below ? this.game.getTileBelow(this.feet()) : this.game.getTileAt(this.feet());
+        this.player.checkLedge = function () {
+            var tile = this.game.getTileAt(this.feet());
             if (tile && tile.collideUp) {
                 return true;
             }
             return false;
+        };
+        this.player.checkFloor = function (below) {
+            if (this.bottom%8 === 0) {
+                var tile = this.game.getTileBelow(this.feet());
+                if (tile && tile.collideUp) {
+                    return true;
+                }
+            } else {
+                var tile = this.game.getTileAt(this.feet());
+                if (tile && tile.collideUp) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        this.player.inBounds = function () {
+            var x = this.feet().x;
+            return x >= 0 && x < this.game.world.width;
         };
 
         this.game.world.sort();
@@ -262,7 +286,7 @@ ICTJam2.Game.prototype = {
     },
 
     setCollisionFlags: function () {
-        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 9, 73, 74, 75, 76, 77, 78, 84, 85, 86, 87, 88,
+        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 9, 39, 40, 56, 73, 74, 75, 76, 77, 78, 84, 85, 86, 87, 88,
             144, 145, 146, 147, 148, 149, 149, 150, 151, 152, 176, 177, 178, 179, 180, 192, 194, 195,
             246, 247, 261, 262, 263, 279, 294, 295];
         for (var i = 0; i < this.collisionLayer.width; i++) {
@@ -278,22 +302,52 @@ ICTJam2.Game.prototype = {
         }
     },
 
+    getTileCollisionHeight: function (tileIndex, horizOffset) {
+        horizOffset = Math.floor(horizOffset);
+        if (!ICTJam2.TerrainInfo.hasOwnProperty(tileIndex)) {
+            return 0;
+        }
+        if (ICTJam2.TerrainInfo[tileIndex].hasOwnProperty('all')) {
+            return ICTJam2.TerrainInfo[tileIndex].all;
+        }
+        return ICTJam2.TerrainInfo[tileIndex][horizOffset];
+    },
+
     collisionCheck: function (entity) {
         var coords = entity.feet();
 
         var vertOffset = coords.y%8;
+
+        var horizOffset = coords.x%8;
         
+        var tile = (vertOffset === 0) ? this.getTileBelow(coords) : this.getTileAt(coords);
         if (entity.falling) {
-            if (vertOffset === 0) {
-                var tileBelow = this.getTileBelow(coords);
-                if (tileBelow && tileBelow.collideUp) {
+            if (tile && tile.collideUp) {
+                if (vertOffset === this.getTileCollisionHeight(tile.index - 1, horizOffset)) {
                     entity.falling = false;
-                    console.log(vertOffset);
                 }
-            } else {
             }
         } else if (entity.walked) {
-            if (vertOffset === 0) {
+            if (tile && tile.collideUp) {
+                var collisionHeight = this.getTileCollisionHeight(tile.index - 1, horizOffset);
+                if (vertOffset === 0) {
+                    var tileAbove = this.getTileAt(coords);
+                    if (tileAbove && tileAbove.collideUp) {
+                        var collisionHeight2 = this.getTileCollisionHeight(tileAbove.index - 1, horizOffset);
+                        if (collisionHeight2 === 7) {
+                            entity.y -= 1;
+                            entity.walked = false;
+                            return;
+                        }
+                    }
+                } 
+                if (vertOffset !== collisionHeight) {
+                    if (Math.abs(vertOffset - collisionHeight) < 2) {
+                        entity.y -= vertOffset - collisionHeight;
+                    } else {
+                        entity.falling = true;
+                    }
+                }
             }
             entity.walked = false;
         }
@@ -353,9 +407,10 @@ ICTJam2.Game.prototype = {
                 this.player.onElevator = false;
             }
 
-            if (this.player.canFall() && this.player.bottom%8 > 0 && this.player.bottom%8 < 7.5) {
-                if (this.player.checkFloor(true)) {
+            if (this.player.canFall()) {
+                if (!this.player.checkFloor(true) && this.player.inBounds()) {
                     this.player.falling = true;
+                    console.log('falling for you');
                 }
             }
 
@@ -398,12 +453,7 @@ ICTJam2.Game.prototype = {
                     this.player.x += velocity;
                 }
                 this.player.walked = true;
-
-                var offSide = this.player.x < 0 || this.player.right > this.game.world.width;
-                var newFloor = this.getTileBelow(this.player.feet());
-                if (!this.player.onElevator && !offSide && (!newFloor || !newFloor.collideUp)) {
-                    this.player.falling = true;
-                }
+                this.collisionCheck(this.player);
             } else {
                 if (this.controls.jump.isDown() && !this.player.onElevator) {
                     this.player.jumping = true;
@@ -413,7 +463,7 @@ ICTJam2.Game.prototype = {
                         this.player.y -= 4;
                         this.player.animations.frame = this.playerFrame(0, this.player.facing);
                         this.player.jumping = false;
-                        if (this.player.checkFloor(false)) {
+                        if (this.player.checkLedge()) {
                             this.player.climbing = true;
                             this.player.climbingStart = true;
                             this.player.climbTime = this.game.time.now;
@@ -531,7 +581,7 @@ ICTJam2.Game.prototype = {
     },
 
     getTileAt: function (pos) {
-        return this.map.getTile(this.collisionLayer.getTileX(pos.x), this.collisionLayer.getTileY(pos.y), 'collision');
+        return this.map.getTile(this.collisionLayer.getTileX(pos.x), this.collisionLayer.getTileY(pos.y - 1), 'collision');
     },
 
     getTileBelow: function (pos) {
