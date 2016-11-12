@@ -17,6 +17,8 @@ ICTJam2.TerrainInfo = {
     39:  {0: false, 1: false, 2: 7, 3: 6, 4: 6, 5: 5, 6: 5, 7: 5},
     40:  {0: 5, 1: 5, 2: 5, 3: 5, 4: 6, 5: 6, 6: 7, 7: false},
     56:  {0: 5, 1: 5, 2: 4, 3: 4, 4: 4, 5: 5, 6: 5, 7: 5},
+    243:  {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7},
+    245:  {0: 7, 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1, 7: 0},
     176: {all: 1},
     177: {all: 1},
     192: {all: 1},
@@ -98,10 +100,12 @@ ICTJam2.Game.prototype = {
             if (this.currentMap !== 'map4' || this.devAccess) {
                 return;
             }
-            this.map.replace(40, 1, 0, 0, this.map.width, this.map.height, 'collision');
-            this.map.replace(41, 1, 0, 0, this.map.width, this.map.height, 'collision');
-            this.map.replace(57, 1, 0, 0, this.map.width, this.map.height, 'collision');
+            this.map.removeTile(22, 11, 'collision');
+            this.map.removeTile(23, 11, 'collision');
+            this.map.removeTile(24, 11, 'collision');
         }, this);
+
+        this.TerrainInfo = this.cache.getJSON('terrainInfo');
 
         //Clean up any references to old groups left over from reseting the game
         this.warps = null;
@@ -262,9 +266,14 @@ ICTJam2.Game.prototype = {
             this.objects = this.game.add.group();
         }
         if (map === 'map5') {
-            var portal = this.objects.create(82, 96, 'tiles', 59);
-            portal.animations.add('spin', [59, 60, 61, 62, 63, 91, 92, 93], 10, true);
-            portal.animations.play('spin');
+            var portals = this.map.objects.warps.filter(function (warp) {
+                return warp.type === 'portal';
+            });
+            portals.forEach(function (portalObj) {
+                var portalSprite = this.objects.create(portalObj.x, portalObj.y, 'tiles', 59);
+                portalSprite.animations.add('spin', [59, 60, 61, 62, 63, 75, 76, 77], 10, true);
+                portalSprite.animations.play('spin');
+            }, this);
         }
         this.objects.z = 1;
 
@@ -320,16 +329,14 @@ ICTJam2.Game.prototype = {
     },
 
     setCollisionFlags: function () {
-        var collisionTop = [1, 2, 3, 4, 5, 6, 7, 8, 9, 39, 40, 56, 73, 74, 75, 76, 77, 78, 84, 85, 86, 87, 88,
-            144, 145, 146, 147, 148, 149, 149, 150, 151, 152, 176, 177, 178, 179, 180, 192, 194, 195,
-            246, 247, 261, 262, 263, 279, 294, 295];
+        var collisionTop = Object.getOwnPropertyNames(this.TerrainInfo);
         for (var i = 0; i < this.collisionLayer.width; i++) {
             for (var j = 0; j < this.collisionLayer.height; j++) {
                 var tile = this.map.getTile(i, j, 'collision');
                 if (!tile) {
                     continue;
                 }
-                if (collisionTop.indexOf(tile.index - 1) !== -1) {
+                if (collisionTop.indexOf((tile.index - 1)+"") !== -1) {
                     tile.collideUp = true;
                 }
             }
@@ -338,13 +345,13 @@ ICTJam2.Game.prototype = {
 
     getTileCollisionHeight: function (tileIndex, horizOffset) {
         horizOffset = Math.floor(horizOffset);
-        if (!ICTJam2.TerrainInfo.hasOwnProperty(tileIndex)) {
+        if (!this.TerrainInfo.hasOwnProperty(tileIndex)) {
             return 0;
         }
-        if (ICTJam2.TerrainInfo[tileIndex].hasOwnProperty('all')) {
-            return ICTJam2.TerrainInfo[tileIndex].all;
+        if (this.TerrainInfo[tileIndex].hasOwnProperty('all')) {
+            return this.TerrainInfo[tileIndex].all;
         }
-        return ICTJam2.TerrainInfo[tileIndex][horizOffset];
+        return this.TerrainInfo[tileIndex][horizOffset];
     },
 
     collisionCheck: function (entity) {
@@ -362,19 +369,19 @@ ICTJam2.Game.prototype = {
                 }
             }
         } else if (entity.walked) {
+            if (vertOffset === 0) {
+                var tileAbove = this.getTileAt(coords);
+                if (tileAbove && tileAbove.collideUp) {
+                    var collisionHeight2 = this.getTileCollisionHeight(tileAbove.index - 1, horizOffset);
+                    if (collisionHeight2 === 7) {
+                        entity.y -= 1;
+                        entity.walked = false;
+                        return;
+                    }
+                }
+            } 
             if (tile && tile.collideUp) {
                 var collisionHeight = this.getTileCollisionHeight(tile.index - 1, horizOffset);
-                if (vertOffset === 0) {
-                    var tileAbove = this.getTileAt(coords);
-                    if (tileAbove && tileAbove.collideUp) {
-                        var collisionHeight2 = this.getTileCollisionHeight(tileAbove.index - 1, horizOffset);
-                        if (collisionHeight2 === 7) {
-                            entity.y -= 1;
-                            entity.walked = false;
-                            return;
-                        }
-                    }
-                } 
                 if (vertOffset !== collisionHeight) {
                     if (Math.abs(vertOffset - collisionHeight) < 2) {
                         entity.y -= vertOffset - collisionHeight;

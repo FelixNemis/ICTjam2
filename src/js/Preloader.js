@@ -30,6 +30,8 @@ ICTJam2.Preloader.prototype = {
 
         this.game.load.audio('boop', ['sfx/boop.mp3', 'sfx/boop.ogg']);
         this.game.load.audio('music', ['sfx/music.mp3', 'sfx/music.ogg']);
+
+        this.game.load.json('terrainInfo', 'data/terrain.json');
 	},
 
 	create: function () {

@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Terrain Data Tool</title>
+        <script type="text/javascript">
+            // Namespace that all game code uses
+            var ICTJam2 = {};
+        </script>
+        <script src="/lib/phaser.min.js"></script>
+        <script src="js/TerrainTool.js"></script>
+    </head>
+    <body style="background-color:#140c1c">
+        <div id="gameContainer" style="border:4px solid #6dc2ca; float:left;"></div>
+        <div style="float:left; margin:4px;">
+            <img src="/img/save.png" onclick="download_json()">
+        </div>
+
+        <script type="text/javascript">
+            window.onload = function() {
+                window.gameInstance = new Phaser.Game(128, 400, Phaser.AUTO, 'gameContainer');
+                window.gameInstance.state.add('TerrainTool', ICTJam2.TerrainTool);
+                window.gameInstance.state.start('TerrainTool');
+
+                var el = document.getElementById('gameContainer');
+                el.oncontextmenu = function (e) {
+                    e.stopPropagation();
+                    return false;
+                };
+            };
+
+            function download_json() {
+                var terrainData = window.gameInstance.state.getCurrentState().terrainInfo;
+                var url = 'data:text/json;charset=utf8,' + encodeURIComponent(JSON.stringify(terrainData));
+                window.open(url, '_blank');
+                window.focus();
+            }
+
+        </script>
+    </body>
+</html>
