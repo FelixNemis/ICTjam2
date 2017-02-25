@@ -11,6 +11,8 @@ ICTJam2.Preloader = function () {
 ICTJam2.Preloader.prototype = {
 	preload: function () {
         this.game.load.spritesheet('tiles', 'img/tiles.png', 8, 8);
+        this.game.load.image('tiles_img', 'img/tiles.png');
+        this.game.load.image('spaceBG', 'img/space_bg.png');
         this.game.load.image('nothing', 'img/nothing.png', 8, 8);
         this.game.load.image('end', 'img/end.png', 8, 8);
 

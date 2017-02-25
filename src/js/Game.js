@@ -57,24 +57,49 @@ ICTJam2.AxisButtons = function (gamepad, deadzone) {
     };
 };
 
+ICTJam2.TouchButton = function (area, input) {
+    this.onDown = new Phaser.Signal();
+    this.isDown = false;
+
+    this.area = area;
+    this.input = input;
+
+    this.input.onDown.add(function () {
+        if (this.input.position.x >= this.area.x && this.input.position.y >= this.area.y) {
+            if (this.input.position.x < this.area.right && this.input.position.y < this.area.bottom) {
+                this.onDown.dispatch();
+                this.isDown = true;
+            }
+        }
+    }, this);
+    this.input.onUp.add(function () {
+        this.isDown = false;
+    }, this);
+};
+
 ICTJam2.MultiControl = function (inputs, game) {
     this.onDown = new Phaser.Signal();
 
     this.callMeOnDown = function () { this.onDown.dispatch(); };
 
-    this.inputs = [];
-    for (var i = 0; i < inputs.length; i++) {
-        if (inputs[i] !== null && typeof inputs[i] === 'object') {
-            if (!inputs[i].hasOwnProperty('isDown') || !inputs[i].hasOwnProperty('onDown')) {
+    this.addNewInput = function (input) {
+        if (input !== null && typeof input === 'object') {
+            if (!input.hasOwnProperty('isDown') || !input.hasOwnProperty('onDown')) {
                 console.log('invalid button passed to MultiControl');
+                return;
             } else {
-                this.inputs.push(inputs[i]);
+                this.inputs.push(input);
             }
         } else {
-            this.inputs.push(game.input.keyboard.addKey(inputs[i]));
+            this.inputs.push(game.input.keyboard.addKey(input));
         }
 
-        this.inputs[i].onDown.add(this.callMeOnDown, this);
+        this.inputs[this.inputs.length - 1].onDown.add(this.callMeOnDown, this);
+    };
+
+    this.inputs = [];
+    for (var i = 0; i < inputs.length; i++) {
+        this.addNewInput(inputs[i]);
     }
 
     this.isDown = function () {
@@ -87,6 +112,9 @@ ICTJam2.MultiControl = function (inputs, game) {
         return anyDown;
     };
 };
+
+ICTJam2.WORLD_WIDTH = 208;
+ICTJam2.WORLD_HEIGHT = 144;
 
 ICTJam2.Game = function () {
 };
@@ -110,6 +138,11 @@ ICTJam2.Game.prototype = {
         //Clean up any references to old groups left over from reseting the game
         this.warps = null;
         this.objects = null;
+
+        // Load initial map
+        this.bg = this.add.sprite(0, 0, 'spaceBG');
+        this.bg.depthVal = -10;
+
         this.loadMap('map1');
 
         this.music = this.game.add.sound('music', 1, true);
@@ -128,7 +161,7 @@ ICTJam2.Game.prototype = {
         this.player.jumping = false;
         this.player.climbing = false;
         this.player.facing = 'right';
-        this.player.z = 2;
+        this.player.depthVal = 2;
         this.player.game = this;
 
         this.player.canFall = function () {
@@ -164,14 +197,15 @@ ICTJam2.Game.prototype = {
             }
             return false;
         };
-        this.player.checkFloor = function (below) {
+        this.player.checkFloor = function () {
+            var tile;
             if (this.bottom%8 === 0) {
-                var tile = this.game.getTileBelow(this.feet());
+                tile = this.game.getTileBelow(this.feet());
                 if (tile && tile.collideUp) {
                     return true;
                 }
             } else {
-                var tile = this.game.getTileAt(this.feet());
+                tile = this.game.getTileAt(this.feet());
                 if (tile && tile.collideUp) {
                     return true;
                 }
@@ -183,7 +217,7 @@ ICTJam2.Game.prototype = {
             return x >= 0 && x < this.game.world.width;
         };
 
-        this.game.world.sort();
+        this.game.world.sort('depthVal');
 
         this.lastSpawn = new Phaser.Point(4, 94);
 
@@ -233,51 +267,104 @@ ICTJam2.Game.prototype = {
             window.muteToggle();
         }, this);
 
+        // Touch Controls
+        this.touchButtonLeft = new ICTJam2.TouchButton(new Phaser.Rectangle(0, 40, ICTJam2.WORLD_WIDTH/2, ICTJam2.WORLD_HEIGHT - 40), this.input);
+        this.controls.left.addNewInput(this.touchButtonLeft);
+        this.touchButtonRight = new ICTJam2.TouchButton(new Phaser.Rectangle(ICTJam2.WORLD_WIDTH/2, 40, ICTJam2.WORLD_WIDTH/2, ICTJam2.WORLD_HEIGHT - 40), this.input);
+        this.controls.right.addNewInput(this.touchButtonRight);
+        this.touchButtonJump = new ICTJam2.TouchButton(new Phaser.Rectangle(0, 0, ICTJam2.WORLD_WIDTH, 40), this.input);
+        this.controls.jump.addNewInput(this.touchButtonJump);
+
         this.controls.misc.onDown.add(function () {
             this.devAccess = true;
+            this.game.time.advancedTiming = true;
         }, this);
 
         this.interactHeld = false;
         this.objSpawnTime = 0;
 
-        //this.game.world.sort();
+        //this.game.world.sort('depthVal');
 	},
 
     loadMap: function (map) {
         this.currentMap = map;
 
+        // Get the animated tile data from the Tiled JSON
+        var mapJSON = this.cache.getTilemapData(map).data;
+        var tSet = mapJSON.tilesets.filter(function (ts) {
+            return ts.name === 'tiles';
+        });
+        var allTileData = tSet[0].tiles;
+        var animTileData = {};
+        for (var i in allTileData) {
+            if (allTileData.hasOwnProperty(i)) {
+                if (allTileData[i].hasOwnProperty('animation')) {
+                    animTileData[i] = allTileData[i].animation;
+                }
+            }
+        }
+
         this.map = this.game.add.tilemap(map);
-        this.map.addTilesetImage('tiles');
-        this.bgLayer = this.map.createLayer('bg');
-        this.bgLayer.z = -4;
+        this.animatedMap = new ICTJam2.AnimatedTilemap(this, this.map, animTileData, 'tiles_img');
+        //this.tsImg = this.map.addTilesetImage('tiles', this.tileTexture);
+        //this.map.addTilesetImage('tiles');
         this.collisionLayer = this.map.createLayer('collision');
-        this.collisionLayer.z = 0;
+        this.collisionLayer.depthVal = 0;
         this.setCollisionFlags();
 
+        //this.bgLayer = this.map.createLayer('bg');
+        //this.bgLayer = new ICTJam2.AnimatedTilemap(this, this.tsImg, this.map, 'bg', animTileData);
+        this.bgLayer = this.animatedMap.createLayer('bg');
+        this.bgLayer.depthVal = -4;
+        this.world.add(this.bgLayer);
+
+        this.world.remove(this.collisionLayer); // TODO just use the map for looking up tiles, since we don't use it for rendering anymore
+        //this.collisLayerSprite = new ICTJam2.AnimatedTilemap(this, this.tsImg, this.map, 'collision', animTileData);
+        this.collisLayerSprite = this.animatedMap.createLayer('collision');
+        this.collisLayerSprite.depthVal = 0;
+        this.world.add(this.collisLayerSprite);
+
+        this.bg.visible = false;
+        mapJSON.layers.forEach(function (layer) {
+            if (layer.type === "imagelayer" && layer.name === "stars") {
+                this.bg.visible = true;
+            }
+        }, this);
+
         this.fgLayer = this.map.createLayer('fg');
-        this.fgLayer.z = 4;
+        this.fgLayer.depthVal = 4;
 
         if (!this.warps) {
             this.warps = this.game.add.group();
+            this.warps.visible = false;
         }
         this.map.createFromObjects('warps', 'warp', 'nothing', null, true, false, this.warps, Phaser.Sprite, false);
 
         if (!this.objects) {
             this.objects = this.game.add.group();
         }
-        if (map === 'map5') {
-            var portals = this.map.objects.warps.filter(function (warp) {
-                return warp.type === 'portal';
-            });
-            portals.forEach(function (portalObj) {
-                var portalSprite = this.objects.create(portalObj.x, portalObj.y, 'tiles', 59);
-                portalSprite.animations.add('spin', [59, 60, 61, 62, 63, 75, 76, 77], 10, true);
-                portalSprite.animations.play('spin');
-            }, this);
-        }
-        this.objects.z = 1;
+        var portals = this.map.objects.warps.filter(function (warp) {
+            //return warp.type === 'portal';
+            return false;
+        });
+        portals.forEach(function (portalObj) {
+            var portalSprite = this.objects.create(portalObj.x, portalObj.y, 'tiles', 59);
+            portalSprite.animations.add('spin', [59, 60, 61, 62, 63, 75, 76, 77], 10, true);
+            portalSprite.animations.play('spin');
+        }, this);
+        /*
+        var entities = this.map.objects.entities.filter(function (ent) {
+            return ent.type === 'entity';
+        });
+        entity.forEach(function (entObj) {
+            var portalSprite = this.objects.create(entObj.x, entObj.y, 'tiles', 59);
+            portalSprite.animations.add('spin', [59, 60, 61, 62, 63, 75, 76, 77], 10, true);
+            portalSprite.animations.play('spin');
+        }, this);
+        */
+        this.objects.depthVal = 1;
 
-        this.game.world.sort();
+        this.game.world.sort('depthVal');
 
         this.onMapLoad.dispatch();
     },
@@ -304,9 +391,12 @@ ICTJam2.Game.prototype = {
 
     cleanMap: function () {
         this.map.destroy();
+        this.animatedMap.destroy();
         this.bgLayer.destroy();
         this.collisionLayer.destroy();
         this.fgLayer.destroy();
+
+        this.collisLayerSprite.destroy();
 
         this.warps.removeAll(true);
 
@@ -402,6 +492,10 @@ ICTJam2.Game.prototype = {
             return;
         }
 
+        if (this.animatedMap) {
+            this.animatedMap.update();
+        }
+
         this.warps.forEach(function (warp) {
             if (this.player.centerX < warp.x || this.player.centerX > warp.right) {
                 return;
@@ -425,13 +519,13 @@ ICTJam2.Game.prototype = {
             }
             this.collisionCheck(this.player);
             /*
-            if (this.player.checkFloor(true) && this.player.bottom%8 < 0.5) {
+            if (this.player.checkFloor() && this.player.bottom%8 < 0.5) {
                 this.player.falling = false;
                 console.log(this.player.y%8);
             }
             */
         } else {
-            var velocity = this.game.time.physicsElapsed * 30;
+            var velocity = this.game.time.physicsElapsed * 40;
 
             if (this.controls.interact.isDown()) {
                 if (!this.interactHeld) {
@@ -449,15 +543,16 @@ ICTJam2.Game.prototype = {
             }
 
             if (this.player.canFall()) {
-                if (!this.player.checkFloor(true) && this.player.inBounds()) {
+                if (!this.player.checkFloor() && this.player.inBounds()) {
                     this.player.falling = true;
-                    console.log('falling for you');
+                    //console.log('falling for you');
                 }
             }
 
             var leftDown = this.controls.left.isDown();
             var rightDown = this.controls.right.isDown();
             if (this.player.falling) {
+                return;
                 // don't do any of these other things
             } else if (this.player.jumping) {
                 this.player.jumping = true;
@@ -512,7 +607,7 @@ ICTJam2.Game.prototype = {
                             this.player.climbTime = this.game.time.now;
                         } else {
                             this.player.y += 2;
-                            var ledgeVal = this.player.checkLedge();
+                            ledgeVal = this.player.checkLedge();
                             if (ledgeVal !== false) {
                                 this.player.climbing = true;
                                 this.player.y += ledgeVal;
@@ -645,6 +740,12 @@ ICTJam2.Game.prototype = {
             return null;
         }
         return this.map.getTile(tileX, tileY + 1, 'collision');
+    },
+
+    render: function () {
+        if (this.game.time.advancedTiming) {
+            this.game.debug.text(this.game.time.fps, 2, 14, "#00ff00");
+        }
     },
 
     respawn: function () {

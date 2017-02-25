@@ -18,12 +18,11 @@ ICTJam2.Boot.prototype = {
 
 		this.game.stage.disableVisibilityChange = true;
 
-	    if (this.game.device.desktop)
-	    {
+	    if (this.game.device.desktop) {
 		    this.game.stage.scale.pageAlignHorizontally = true;
-	    }
-	    else
-	    {
+	    } else {
+		    this.game.stage.scale.pageAlignHorizontally = true;
+            /*
 		    this.game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
 		    this.game.stage.scale.minWidth = 480;
 		    this.game.stage.scale.minHeight = 260;
@@ -32,6 +31,7 @@ ICTJam2.Boot.prototype = {
 		    this.game.stage.scale.forceLandscape = true;
 		    this.game.stage.scale.pageAlignHorizontally = true;
 		    this.game.stage.scale.setScreenSize(true);
+            */
 	    }
         this.game.state.add('Preloader', ICTJam2.Preloader);
         this.game.state.add('Game', ICTJam2.Game);
