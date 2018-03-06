@@ -15,6 +15,7 @@
         <div style="float:left; margin:4px;">
             <img src="/img/save.png" onclick="download_json()">
         </div>
+        <a id="downloadDummy" style="display:none"></a>
 
         <script type="text/javascript">
             window.onload = function() {
@@ -31,9 +32,17 @@
 
             function download_json() {
                 var terrainData = window.gameInstance.state.getCurrentState().terrainInfo;
+                /*
+                console.log(encodeURIComponent(JSON.stringify(terrainData)).length);
                 var url = 'data:text/json;charset=utf8,' + encodeURIComponent(JSON.stringify(terrainData));
                 window.open(url, '_blank');
                 window.focus();
+                */
+                var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(terrainData));
+                var downloadDummy = document.getElementById('downloadDummy');
+                downloadDummy.setAttribute("href", dataStr);
+                downloadDummy.setAttribute("download", "");
+                downloadDummy.click();
             }
 
         </script>
