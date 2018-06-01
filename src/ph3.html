@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>ICTjam2 phaser 3 edition</title>
+        <script type="text/javascript">
+            // Namespace that all game code uses
+            var ICTJam2 = {};
+        </script>
+        <script src="lib/phaser3.min.js"></script>
+        <script src="js/TestGame.js"></script>
+    </head>
+    <body style="background-color:#140c1c">
+        <div id="gameContainer" style="border:4px solid #6dc2ca; float:left;"></div>
+        <div style="float:left; margin:4px;">
+            <img src="img/plusBig.png" onclick="biggen()"><br><img src="img/minusBig.png" onclick="smallen()">
+            <br><img id="soundToggle" src="img/noteBig.png" onclick="muteToggle()">
+            <br><img src="img/question.png" onclick="controls()">
+        </div>
+
+        <script type="text/javascript">
+            window.onload = function() {
+                var config = {
+                    type: Phaser.AUTO,
+                    width: 208*4,
+                    height: 144*4,
+                    pixelArt: true,
+                    parent: 'gameContainer',
+                    scene: ICTJam2.gameScene
+                };
+                window.gameInstance = new Phaser.Game(config);
+            };
+
+            function biggen() { changeScale(true); }
+            function smallen() { changeScale(false); }
+
+            function changeScale(bigger) {
+            }
+
+            function muteToggle() {
+            }
+            var muted = false;
+
+            function controls() {
+            }
+        </script>
+    </body>
+</html>
