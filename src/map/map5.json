@@ -102,7 +102,7 @@
                     {
                      "destDir":"left",
                      "destX":"194",
-                     "destY":"56",
+                     "destY":"26",
                      "destination":"map1"
                     },
                  "rotation":0,
@@ -110,7 +110,102 @@
                  "visible":true,
                  "width":6,
                  "x":130,
-                 "y":58
+                 "y":56
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":26,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "height":18,
+         "name":"entities",
+         "objects":[
+                {
+                 "height":48,
+                 "id":4,
+                 "name":"warp",
+                 "properties":
+                    {
+                     "destX":"2",
+                     "destination":"map2"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":8,
+                 "x":210,
+                 "y":70
+                }, 
+                {
+                 "gid":47,
+                 "height":8,
+                 "id":6,
+                 "name":"",
+                 "properties":
+                    {
+                     "entity":"bug"
+                    },
+                 "rotation":0,
+                 "type":"entity",
+                 "visible":true,
+                 "width":8,
+                 "x":86,
+                 "y":100
+                }, 
+                {
+                 "gid":47,
+                 "height":8,
+                 "id":8,
+                 "name":"",
+                 "properties":
+                    {
+                     "entity":"bug"
+                    },
+                 "rotation":0,
+                 "type":"entity",
+                 "visible":true,
+                 "width":8,
+                 "x":172,
+                 "y":112
+                }, 
+                {
+                 "gid":47,
+                 "height":8,
+                 "id":9,
+                 "name":"",
+                 "properties":
+                    {
+                     "entity":"bug",
+                     "offset":"0.5"
+                    },
+                 "rotation":0,
+                 "type":"entity",
+                 "visible":true,
+                 "width":8,
+                 "x":96,
+                 "y":66
+                }, 
+                {
+                 "gid":47,
+                 "height":8,
+                 "id":10,
+                 "name":"",
+                 "properties":
+                    {
+                     "entity":"bug",
+                     "offset":"1",
+                     "reverse":"false"
+                    },
+                 "rotation":0,
+                 "type":"entity",
+                 "visible":true,
+                 "width":8,
+                 "x":78,
+                 "y":80
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -119,7 +214,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":4,
+ "nextobjectid":11,
  "orientation":"orthogonal",
  "properties":
     {
@@ -132,7 +227,7 @@
          "columns":16,
          "firstgid":1,
          "image":"..\/img\/tiles.png",
-         "imageheight":192,
+         "imageheight":224,
          "imagewidth":128,
          "margin":0,
          "name":"tiles",
@@ -141,7 +236,7 @@
 
             },
          "spacing":0,
-         "tilecount":384,
+         "tilecount":448,
          "tileheight":8,
          "tiles":
             {

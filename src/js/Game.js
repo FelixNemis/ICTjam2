@@ -8,6 +8,7 @@ ICTJam2.TileConst = {
     TERM_OFF: 42,
     TERM_ON: 43,
     ELEVATOR: 45,
+    BUG: 47,
 };
 
 ICTJam2.TerrainInfo = {
@@ -352,16 +353,18 @@ ICTJam2.Game.prototype = {
             portalSprite.animations.add('spin', [59, 60, 61, 62, 63, 75, 76, 77], 10, true);
             portalSprite.animations.play('spin');
         }, this);
-        /*
-        var entities = this.map.objects.entities.filter(function (ent) {
-            return ent.type === 'entity';
-        });
-        entity.forEach(function (entObj) {
-            var portalSprite = this.objects.create(entObj.x, entObj.y, 'tiles', 59);
-            portalSprite.animations.add('spin', [59, 60, 61, 62, 63, 75, 76, 77], 10, true);
-            portalSprite.animations.play('spin');
-        }, this);
-        */
+
+        if (this.map.objects.hasOwnProperty('entities')) {
+            var entities = this.map.objects.entities.filter(function (ent) {
+                return ent.type === 'entity';
+            });
+            var spawnBug = this.spawnBug.bind(this);
+            entities.forEach(function (entObj) {
+                if (entObj.properties.entity === 'bug') {
+                    spawnBug(entObj.x, entObj.y, entObj.properties);
+                }
+            }, this);
+        }
         this.objects.depthVal = 1;
 
         this.game.world.sort('depthVal');
@@ -712,6 +715,68 @@ ICTJam2.Game.prototype = {
                     this.destroy();
                 }
             }
+        };
+    },
+
+    spawnBug: function (x, y, properties) {
+        var bug = this.objects.create(x, y, 'tiles', ICTJam2.TileConst.BUG - 1);
+        bug.originX = x;
+        bug.originY = y;
+        bug.animations.add('copter', [ICTJam2.TileConst.BUG, ICTJam2.TileConst.BUG - 1], 20, true);
+        bug.animations.play('copter');
+        bug.name = "Fred";
+        bug.gameState = this;
+        bug.time = 0;
+
+        bug.reverse = 1;
+        if (properties.hasOwnProperty('reverse') && properties.reverse !== 'false') {
+            bug.reverse = -1;
+        }
+
+        if (properties.hasOwnProperty('offset')) {
+            bug.time += properties.offset * Math.PI;
+        }
+
+        bug.update = function () {
+            this.time += this.gameState.time.physicsElapsed;
+
+            //First check if player is on top
+            var xInRange = this.gameState.player.centerX > this.x && this.gameState.player.centerX < this.right;
+            var yInRange = this.gameState.player.centerY + 4 === this.y;
+
+            //Now move
+            var oldX = this.x;
+            var oldY = this.y;
+            this.x = Math.round(this.originX + (Math.sin(this.time * this.reverse) * 20));
+            this.y = Math.round(this.originY + (Math.cos(this.time * this.reverse) * 20));
+            var deltaX = this.x - oldX;
+            var deltaY = this.y - oldY;
+
+            //update player if they were on top
+            if (xInRange && yInRange) {
+                console.log('moving player');
+                var playerOrigPos = this.gameState.player.position;
+                this.gameState.player.x = playerOrigPos.x + deltaX;
+                this.gameState.player.y = this.y-8;
+                this.gameState.player.onElevator = true;
+                this.gameState.player.pushedThisFrame = true;
+                this.gameState.player.falling = false;
+            }
+            /*
+            if (!this.waiting) {
+                this.y -= 0.5;
+                if (xInRange && Math.abs(this.gameState.player.feet().y - this.y) < 4) {
+                    this.gameState.player.y = this.y - 8;
+                    this.gameState.player.onElevator = true;
+                    this.gameState.player.pushedThisFrame = true;
+                    this.gameState.player.falling = false;
+                }
+
+                if (this.y <= this.targetY) {
+                    this.destroy();
+                }
+            }
+            */
         };
     },
 
