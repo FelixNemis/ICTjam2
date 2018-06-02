@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>ICTjam2</title>
+        <script type="text/javascript">
+            // Namespace that all game code uses
+            var ICTJam2 = {};
+        </script>
+        <script src="lib/phaser.min.js"></script>
+        <script src="js/Boot.js"></script>
+        <script src="js/Preloader.js"></script>
+        <script src="js/Game.js"></script>
+        <script src="js/AnimatedTilemap.js"></script>
+        <script src="js/AnimatedTilemapLayer.js"></script>
+    </head>
+    <body style="background-color:#140c1c">
+        <div id="gameContainer" style="border:4px solid #6dc2ca; float:left;"></div>
+        <div style="float:left; margin:4px;">
+            <img src="img/plusBig.png" onclick="biggen()"><br><img src="img/minusBig.png" onclick="smallen()">
+            <br><img id="soundToggle" src="img/noteBig.png" onclick="muteToggle()">
+            <br><img src="img/question.png" onclick="controls()">
+        </div>
+
+        <script type="text/javascript">
+            window.onload = function() {
+                ICTJam2.CONVENTION_MODE = true;
+                window.gameInstance = new Phaser.Game(208, 144, Phaser.WEBGL_MULTI, 'gameContainer');
+                window.gameInstance.state.add('Boot', ICTJam2.Boot);
+                window.gameInstance.state.start('Boot');
+            };
+
+            function biggen() { changeScale(true); }
+            function smallen() { changeScale(false); }
+
+            function changeScale(bigger) {
+                var newScale = window.gameInstance.myScaleFactor + (bigger ? 1 : -1);
+                if (newScale < 1) {
+                    newScale = 1;
+                }
+                if (newScale > 10) {
+                    newScale = 10;
+                }
+                window.gameInstance.scale.setUserScale(newScale, newScale);
+                window.gameInstance.myScaleFactor = newScale;
+            }
+
+            function muteToggle() {
+                var el = document.getElementById('soundToggle');
+                var state = window.gameInstance.state.getCurrentState();
+                muted = !muted;
+
+                if (muted) {
+                    el.src = "img/noMusicBig.png";
+                    state.mute();
+                } else {
+                    el.src = "img/noteBig.png";
+                    state.unmute();
+                }
+            }
+            var muted = false;
+
+            function controls() {
+                alert("Controls: Arrow keys, z x c or v to interact");
+            }
+        </script>
+    </body>
+</html>

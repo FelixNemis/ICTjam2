@@ -11,6 +11,9 @@ ICTJam2.TileConst = {
     BUG: 47,
 };
 
+ICTJam2.CONVENTION_MODE = false;
+ICTJam2.CONVENTION_RESET_AFTER = 1000 * 60 * 2; // 2 minutes in miliseconds
+
 ICTJam2.TerrainInfo = {
     1:   {0: 5, 1: 2, 2: 1, 3: 1, 4: 0, 5: 0, 6: 0, 7: 0}, 
     4:   {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 3}, 
@@ -122,6 +125,8 @@ ICTJam2.Game = function () {
 
 ICTJam2.Game.prototype = {
 	create: function () {
+        this.lastInputTime = this.game.time.now;
+
         this.onMapLoad = new Phaser.Signal();
 
         this.devAccess = false;
@@ -253,6 +258,13 @@ ICTJam2.Game.prototype = {
             upButtons.push(this.game.input.gamepad.pad1.getButton(1));
         }
 
+        this.input.keyboard.addCallbacks(this, function () {
+            this.lastInputTime = this.game.time.now;
+        });
+        this.input.onDown.add(function () {
+            this.lastInputTime = this.game.time.now;
+        }, this);
+
         this.controls = {
             left: new ICTJam2.MultiControl(leftButtons, this.game),
             right: new ICTJam2.MultiControl(rightButtons, this.game),
@@ -277,8 +289,13 @@ ICTJam2.Game.prototype = {
         this.controls.jump.addNewInput(this.touchButtonJump);
 
         this.controls.misc.onDown.add(function () {
-            this.devAccess = true;
-            this.game.time.advancedTiming = true;
+            if (!this.devAccess) {
+                this.sfx.boop.play();
+                this.devAccess = true;
+                if (!ICTJam2.CONVENTION_MODE) {
+                    this.game.time.advancedTiming = true;
+                }
+            }
         }, this);
 
         this.interactHeld = false;
@@ -491,6 +508,9 @@ ICTJam2.Game.prototype = {
         if (this.controls.reset.isDown()) {
             this.resetGame();
         }
+        if (ICTJam2.CONVENTION_MODE && this.game.time.now - this.lastInputTime > ICTJam2.CONVENTION_RESET_AFTER) {
+            this.resetGame();
+        }
         if (this.logicPaused) {
             return;
         }
@@ -642,6 +662,9 @@ ICTJam2.Game.prototype = {
             this.endSprite = this.game.add.sprite(0, 0, 'end');
             //this.endSprite.alpha = 0;
 
+            if (ICTJam2.CONVENTION_MODE) {
+                setTimeout(this.resetGame.bind(this), 10000); // reset after 10 seconds in convention mode
+            }
         }
 	},
 
