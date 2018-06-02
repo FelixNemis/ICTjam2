@@ -37,6 +37,8 @@ ICTJam2.axisIsHoriz = function (axis) {
     return (ICTJam2.gamepadConfig.h.indexOf(axis) !== -1);
 };
 
+var initialLoad = true;
+
 ICTJam2.AxisButtons = function (gamepad, deadzone) {
     this.gamepad = gamepad;
     this.deadzone = deadzone;
@@ -162,7 +164,8 @@ ICTJam2.Game.prototype = {
             this.mute();
         }
 
-        this.player = this.game.add.sprite(103, -4, 'tiles', 21);
+        this.player = this.game.add.sprite(103, initialLoad ? -4 : 64, 'tiles', 21);
+        initialLoad = false;
         this.player.falling = true;
         this.player.jumping = false;
         this.player.climbing = false;
@@ -847,6 +850,7 @@ ICTJam2.Game.prototype = {
 
     returnToTitle: function () {
         this.music.stop();
+        initialLoad = true;
         this.game.state.start("Title");
     }
 };
