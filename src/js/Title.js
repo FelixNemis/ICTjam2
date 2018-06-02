@@ -10,7 +10,8 @@ ICTJam2.Title = function () {
 
 var makeAParticle = function (game, x, y) {
     "use strict";
-    var particle = game.add.sprite(x, y, 'star_particle');
+    var part = Math.round(Math.random() + 1);
+    var particle = game.add.sprite(x, y, 'star_particle' + part);
     game.physics.enable(particle);
     particle.body.velocity = new Phaser.Point(0, Math.round(-10 + Math.random() * -20));
     particle.update = function () {

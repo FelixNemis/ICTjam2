@@ -14,7 +14,8 @@ ICTJam2.Preloader.prototype = {
         this.game.load.image('tiles_img', 'img/tiles.png');
         this.game.load.image('spaceBG', 'img/space_bg.png');
         this.game.load.image('nothing', 'img/nothing.png', 8, 8);
-        this.game.load.image('star_particle', 'img/star_particle.png');
+        this.game.load.image('star_particle1', 'img/star_particle.png');
+        this.game.load.image('star_particle2', 'img/star_particle2.png');
         this.game.load.image('end', 'img/end.png');
         this.game.load.image('title', 'img/title.png');
 
