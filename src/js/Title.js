@@ -55,10 +55,14 @@ ICTJam2.Title.prototype = {
 	},
 
     update: function () {
+        var sanity = 0;
         while (this.game.time.now - this.lastParticle > this.particleTimeDiff) {
             this.lastParticle += this.particleTimeDiff;
             var randX = Math.random() * this.game.world.width;
             makeAParticle(this, randX, 144);
+            if (sanity++ > 20) {
+                break;
+            }
         }
     }
 };
