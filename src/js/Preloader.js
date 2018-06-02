@@ -14,7 +14,9 @@ ICTJam2.Preloader.prototype = {
         this.game.load.image('tiles_img', 'img/tiles.png');
         this.game.load.image('spaceBG', 'img/space_bg.png');
         this.game.load.image('nothing', 'img/nothing.png', 8, 8);
-        this.game.load.image('end', 'img/end.png', 8, 8);
+        this.game.load.image('star_particle', 'img/star_particle.png');
+        this.game.load.image('end', 'img/end.png');
+        this.game.load.image('title', 'img/title.png');
 
         this.game.load.tilemap('map1', 'map/map1.json', null, Phaser.Tilemap.TILED_JSON);
         this.game.load.tilemap('map2', 'map/map2.json', null, Phaser.Tilemap.TILED_JSON);
@@ -37,7 +39,7 @@ ICTJam2.Preloader.prototype = {
 	},
 
 	create: function () {
-        this.game.state.start('Game');
+        this.game.state.start('Title');
 	}
 };
 

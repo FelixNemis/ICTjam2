@@ -34,6 +34,7 @@ ICTJam2.Boot.prototype = {
             */
 	    }
         this.game.state.add('Preloader', ICTJam2.Preloader);
+        this.game.state.add('Title', ICTJam2.Title);
         this.game.state.add('Game', ICTJam2.Game);
 
         this.game.stage.backgroundColor = '#140c1c';

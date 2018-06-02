@@ -162,7 +162,7 @@ ICTJam2.Game.prototype = {
             this.mute();
         }
 
-        this.player = this.game.add.sprite(4, 94, 'tiles', 21);
+        this.player = this.game.add.sprite(103, -4, 'tiles', 21);
         this.player.falling = true;
         this.player.jumping = false;
         this.player.climbing = false;
@@ -509,7 +509,7 @@ ICTJam2.Game.prototype = {
             this.resetGame();
         }
         if (ICTJam2.CONVENTION_MODE && this.game.time.now - this.lastInputTime > ICTJam2.CONVENTION_RESET_AFTER) {
-            this.resetGame();
+            this.returnToTitle();
         }
         if (this.logicPaused) {
             return;
@@ -663,7 +663,7 @@ ICTJam2.Game.prototype = {
             //this.endSprite.alpha = 0;
 
             if (ICTJam2.CONVENTION_MODE) {
-                setTimeout(this.resetGame.bind(this), 10000); // reset after 10 seconds in convention mode
+                setTimeout(this.returnToTitle.bind(this), 10000); // reset after 10 seconds in convention mode
             }
         }
 	},
@@ -843,6 +843,11 @@ ICTJam2.Game.prototype = {
     resetGame: function () {
         this.music.stop();
         this.game.state.start("Game");
+    },
+
+    returnToTitle: function () {
+        this.music.stop();
+        this.game.state.start("Title");
     }
 };
 
