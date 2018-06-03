@@ -61,6 +61,7 @@ ICTJam2.Title.prototype = {
             var randX = Math.random() * this.game.world.width;
             makeAParticle(this, randX, 144);
             if (sanity++ > 20) {
+		this.lastParticle = this.game.time.now;
                 break;
             }
         }
