@@ -160,7 +160,7 @@ ICTJam2.Game.prototype = {
             boop: this.game.add.sound('boop')
         };
 
-        if (!window.muted) {
+        if (window.muted) {
             this.mute();
         }
 
